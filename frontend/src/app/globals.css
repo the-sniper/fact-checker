@@ -26,6 +26,13 @@ body {
   font-family: "kodchasan", Arial, Helvetica, sans-serif;
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+}
+
 .customContainer {
   padding-left: 60px;
   padding-right: 60px;
@@ -260,7 +267,6 @@ html {
   fill: #ff7979;
 }
 
-
 .overallScores .overallFactCheck h6 {
   color: inherit;
   font-family: "Kodchasan";
@@ -268,6 +274,7 @@ html {
   font-weight: 500;
   line-height: normal;
 }
+
 .overallScores .overallFactCheck h3 {
   color: inherit;
   font-family: "Kodchasan";
@@ -350,4 +357,231 @@ html {
   line-height: normal;
   margin-bottom: 8px;
   margin-top: 15px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid var(--primColor);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Skeleton loader styles */
+.skeleton-loader {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-text {
+  height: 40px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 15px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-bg-1 {
+  background: rgba(235, 242, 251, 0.5) !important;
+}
+
+.skeleton-bg-2 {
+  background: rgba(235, 251, 241, 0.5) !important;
+}
+
+.skeleton-bg-3 {
+  background: rgba(237, 235, 251, 0.5) !important;
+}
+
+.skeleton-bg-4 {
+  background: rgba(251, 235, 250, 0.5) !important;
+}
+
+.skeleton-bg-5 {
+  background: rgba(251, 235, 237, 0.5) !important;
+}
+
+.skeleton-bg-6 {
+  background: rgba(247, 246, 228, 0.5) !important;
+}
+
+/* Pulsing animation for skeleton loaders */
+.skeleton-loader::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent);
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Additional skeleton loader styles */
+.skeleton-section {
+  opacity: 0.7;
+}
+
+.skeleton-text-md {
+  height: 30px;
+  width: 180px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+.skeleton-text-paragraph {
+  height: 80px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-list {
+  margin-left: 20px;
+}
+
+.skeleton-list li {
+  height: 20px;
+  margin-bottom: 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.skeleton-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* For the factClaim section */
+.factCheckerInfo .factClaim.skeleton-loader {
+  background: linear-gradient(90deg, #f7f7f7 0%, #00000005 100%);
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+/* For the fcInner sections */
+.fcInner .skeleton-text-sm {
+  width: 120px;
+  margin-bottom: 8px;
+}
+
+.skeleton-list li {
+  list-style: none;
+}
+
+/* Improved overallFactCheck skeleton styles */
+.overallFactCheck.skeleton-loader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(235, 242, 251, 0.5);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.overallFactCheck.skeleton-loader:nth-child(1) {
+  background-color: rgba(235, 251, 241, 0.5);
+  border-color: #ccc;
+}
+
+.overallFactCheck.skeleton-loader:nth-child(2) {
+  background-color: rgba(235, 242, 251, 0.5);
+  border-color: #ccc;
+}
+
+.overallFactCheck.skeleton-loader h6.skeleton-text-sm {
+  width: 120px;
+  height: 15px;
+  margin-bottom: 10px;
+}
+
+.overallFactCheck.skeleton-loader h3.skeleton-text {
+  width: 80px;
+  height: 30px;
+}
+
+.overallFactCheck.skeleton-loader .skeleton-icon {
+  width: 30px;
+  height: 30px;
+}
+
+@media (max-width: 1600px) {
+
+  .factCheckerForm,
+  .claimsInfoCnt {
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 1366px) {
+
+  .factCheckerForm,
+  .claimsInfoCnt {
+    max-width: 100%;
+  }
+
+  .factCheckerMain {
+    padding: 30px;
+  }
+}
+
+@media (max-width: 1240px) {
+  .home .claimsInfoCnt {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .factCheckerMain {
+    padding: 30px 20px;
+  }
+
+  .claimsInfoCnt .claimsInfo {
+    padding: 8px 8px;
+  }
 }

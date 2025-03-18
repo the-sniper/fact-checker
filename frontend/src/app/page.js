@@ -4,67 +4,54 @@ import CustomButton from "@/components/atoms/buttons/CustomButton";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import { capitalize } from "@mui/material";
+import { useState } from "react";
+import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
+
+const EvaluationSchema = Yup.object().shape({
+  text: Yup.string()
+    .required("Text to evaluate is required")
+    .min(3, "Text must be at least 3 characters")
+    .max(1000, "Text must be less than 1000 characters"),
+});
 
 export default function Home() {
- 
-  const sampleResponse = {
-    pipeline: [
-      "factool_claimprocessor",
-      "factool_retriever",
-      "factool_verifier",
-    ],
-    detected_claims: ["Jupiter is a planet", "Jupiter is the smallest planet"],
-    evidence_count: 8,
-    supported_claims: 1,
-    conflicted_claims: 1,
-    controversial_claims: 0,
-    unverified_claims: 0,
-    overall_factuality: "false",
-    overall_credibility: 0.5,
-    detailed_claims: [
-      {
-        id: 1,
-        claim: "Jupiter is a planet",
-        factuality_status: "true",
-        error: null,
-        reasoning:
-          "The given text states that 'Jupiter is a planet.' The provided evidences consistently describe Jupiter as the fifth planet from the Sun and the largest in the solar system. All evidences support the fact that Jupiter is indeed a planet, specifically a gas giant, and there are no contradictions among the evidences regarding this fact.",
-        correction: "None",
-        evidences: [
-          {
-            question: "Is Jupiter a planet? Jupiter planet status",
-            sources: [
-              "Jupiter is the fifth planet from the Sun, and the largest in the solar system – more than twice as massive as the other planets combined.",
-              "Jupiter is above the horizon from Greenwich, UK. · Right now it is placed in the West-North-West direction at an altitude of 9.43° above the horizon. · Given its ...",
-              "Jupiter is the fifth planet from the Sun, and the largest in the solar system – more than twice as massive as the other planets combined.",
-              "Jupiter is the fifth closest planet to the Sun and is the first of what are called the outer planets (being outside the asteroid belt).",
-              "Jupiter is the fifth planet from the Sun and the largest in the Solar System. It is a gas giant with a mass more than 2.5 times that of all the other planets ...",
-              "Jupiter is currently in the constellation of Taurus. The current Right Ascension is 04h 50m 49s and the Declination is +22° 08' 10” .",
-            ],
-          },
-        ],
-      },
-      {
-        id: 2,
-        claim: "Jupiter is the smallest planet",
-        factuality_status: "false",
-        error:
-          "The text incorrectly states that Jupiter is the smallest planet.",
-        reasoning:
-          "The given text states that Jupiter is the smallest planet. However, the provided evidence indicates that Jupiter is extremely large, with a volume over 1,300 times that of Earth, and it weighs two and a half times the weight of all the other eight planets combined. Additionally, Mercury is mentioned in the evidence, which is known to be the smallest planet in the solar system. Therefore, the statement in the text is factually incorrect.",
-        correction: "Jupiter is the largest planet.",
-        evidences: [
-          {
-            question:
-              "What is the smallest planet in the solar system? Jupiter size compared to other planets",
-            sources: [
-              "Mercury",
-              "It's volume is over 1,300 times the volume of Earth. This means that Jupiter is so big that over 1,300 Earths could fit inside of it. Jupiter is so big that it weighs two and a half times the weight of all of the other eight planets put together!",
-            ],
-          },
-        ],
-      },
-    ],
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const evaluateText = async (values) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const API_URL =
+        "https://136a-2601-47-4481-3570-294d-333a-20ec-330d.ngrok-free.app";
+      const response = await fetch(`${API_URL}/evaluate-response`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: values.text,
+          claimprocessor: "factool_claimprocessor",
+          retriever: "factool_retriever",
+          verifier: "factool_verifier",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      setError(err.message || "Failed to evaluate text");
+      console.error("Evaluation error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,106 +59,206 @@ export default function Home() {
       <div className="factCheckerMain">
         <div className="factCheckerForm">
           <h1 className="text-lg">Fact Checker</h1>
-          <CustomInput
-            label="Type here..."
-            placeholder="Type here..."
-            endAdornment={
-              <CustomButton type="submit" variant="contained" label="Submit" />
-            }
-          />
+          <Formik
+            initialValues={{ text: "" }}
+            validationSchema={EvaluationSchema}
+            onSubmit={evaluateText}
+          >
+            {({ errors, touched }) => (
+              <Form className="space-y-4">
+                <Field name="text">
+                  {({ field }) => (
+                    <div>
+                      <CustomInput
+                        {...field}
+                        placeholder="Enter text to evaluate"
+                        disabled={loading}
+                        endAdornment={
+                          <CustomButton
+                            type="submit"
+                            disabled={loading}
+                            className="px-4 py-2 bg-blue-500 text-white rounded"
+                            label={loading ? "Evaluating..." : "Evaluate"}
+                          />
+                        }
+                      />
+                      {errors.text && touched.text ? (
+                        <div className="text-red-500 text-sm mt-1">
+                          {errors.text}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </Field>
+              </Form>
+            )}
+          </Formik>
+          {error && <div className="text-red-500 mt-4">{error}</div>}
         </div>
-        <div className="claimsInfoCnt">
-          <div className="claimsInfo">
-            <h4>{sampleResponse.detected_claims?.length}</h4>
-            <p>Detected Claims</p>
+
+        {loading ? (
+          <div className="claimsInfoCnt">
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className={`claimsInfo skeleton-loader skeleton-bg-${index + 1}`}>
+                <h4 className="skeleton-text"></h4>
+                <p className="skeleton-text-sm"></p>
+              </div>
+            ))}
           </div>
-          <div className="claimsInfo">
-            <h4>{sampleResponse.evidence_count}</h4>
-            <p>Retrieved Evidences</p>
-          </div>
-          <div className="claimsInfo">
-            <h4>{sampleResponse.supported_claims}</h4>
-            <p>Supported Claims</p>
-          </div>
-          <div className="claimsInfo">
-            <h4>{sampleResponse.conflicted_claims}</h4>
-            <p>Conflicted Claims</p>
-          </div>
-          <div className="claimsInfo">
-            <h4>{sampleResponse.controversial_claims}</h4>
-            <p>Controversial Claims</p>
-          </div>
-          <div className="claimsInfo">
-            <h4>{sampleResponse.unverified_claims}</h4>
-            <p>Unverified Claims</p>
-          </div>
-        </div>
+        ) : (
+          result && (
+            <div className="claimsInfoCnt">
+              <div className="claimsInfo">
+                <h4>{result.detected_claims?.length}</h4>
+                <p>Detected Claims</p>
+              </div>
+              <div className="claimsInfo">
+                <h4>{result.evidence_count}</h4>
+                <p>Retrieved Evidences</p>
+              </div>
+              <div className="claimsInfo">
+                <h4>{result.supported_claims}</h4>
+                <p>Supported Claims</p>
+              </div>
+              <div className="claimsInfo">
+                <h4>{result.conflicted_claims}</h4>
+                <p>Conflicted Claims</p>
+              </div>
+              <div className="claimsInfo">
+                <h4>{result.controversial_claims}</h4>
+                <p>Controversial Claims</p>
+              </div>
+              <div className="claimsInfo">
+                <h4>{result.unverified_claims}</h4>
+                <p>Unverified Claims</p>
+              </div>
+            </div>
+          )
+        )}
       </div>
 
-      <div className="factCheckerDescription">
+      {loading ? <div className="factCheckerDescription skeleton-section">
+        {/* Overall Scores Skeleton */}
         <div className="overallScores">
-          <div className={`overallFactCheck ${sampleResponse?.overall_factuality}`}>
+          <div className="overallFactCheck skeleton-loader">
             <div>
-              <h6>Overall Fact-check</h6>
-              <h3>{capitalize(sampleResponse?.overall_factuality)}</h3>
+              <h6 className="skeleton-text-sm"></h6>
+              <h3 className="skeleton-text"></h3>
             </div>
-            <ThumbDownIcon />
+            <div className="skeleton-icon"></div>
           </div>
-          <div className={`overallFactCheck ${sampleResponse?.overall_credibility >= 0.9 ? 'true' : 'true'}`}>
+          <div className="overallFactCheck skeleton-loader">
             <div>
-              <h6>Overall Credibility</h6>
-              <h3>
-                {sampleResponse?.overall_credibility
-                  ? (sampleResponse?.overall_credibility * 100).toFixed(1) + "%"
-                  : 0}
-              </h3>
+              <h6 className="skeleton-text-sm"></h6>
+              <h3 className="skeleton-text"></h3>
             </div>
-            <ThumbUpIcon />
+            <div className="skeleton-icon"></div>
           </div>
         </div>
 
-        <h3>Detected Claims</h3>
-        <ol>
-          {sampleResponse?.detailed_claims?.map((data, index) => (
-            <li key={index}>{data.claim}</li>
+        {/* Detected Claims Skeleton */}
+        <h3 className="skeleton-text-md"></h3>
+        <ol className="skeleton-list">
+          {[...Array(3)].map((_, i) => (
+            <li key={i} className="skeleton-text-sm"></li>
           ))}
         </ol>
 
-        <div className="factCheckerDetails">
-          <h3>Fact Details</h3>
-          {sampleResponse?.detailed_claims.map((detail, index) => (
-            <div
-              key={index}
-              className={`factCheckerInfo ${index === 0 ? "first" : ""}`}
-            >
-              <div className={`factClaim ${detail.factuality_status}`}>
-                <h4>
-                  {detail?.id}. {detail?.claim}
-                </h4>
+        {/* Fact Details Skeleton */}
+        <h3 className="skeleton-text-md"></h3>
+        {[...Array(2)].map((_, index) => (
+          <div key={index} className={`factCheckerInfo skeleton-loader ${index === 0 ? "first" : ""}`}>
+            <div className="factClaim skeleton-loader">
+              <h4 className="skeleton-text"></h4>
+            </div>
+
+            <div className="fcInner">
+              <h5 className="skeleton-text-sm"></h5>
+              <p className="skeleton-text-paragraph"></p>
+            </div>
+          </div>
+        ))}
+      </div> : (
+        result && <div className="factCheckerDescription">
+          <div className="overallScores">
+            <div className={`overallFactCheck ${result?.overall_factuality}`}>
+              <div>
+                <h6>Overall Fact-check</h6>
+                <h3>{capitalize(result?.overall_factuality)}</h3>
               </div>
-
-              <div className="fcInner">
-                <h5>Reasoning</h5>
-                <p>{detail.reasoning}</p>
-              </div>
-
-              {detail.factuality_status === "false" && (
-                <>
-                  <div className="fcInner">
-                    <h5>Error</h5>
-                    <p>{detail.error}</p>
-                  </div>
-
-                  <div className="fcInner">
-                    <h5>Correction</h5>
-                    <p>{detail.correction}</p>
-                  </div>
-                </>
+              {result?.overall_factuality === "true" ? (
+                <ThumbUpIcon />
+              ) : (
+                <ThumbDownIcon />
               )}
             </div>
-          ))}
+            <div
+              className={`overallFactCheck ${result?.overall_credibility >= 0.9 ? "true" : "false"
+                }`}
+            >
+              <div>
+                <h6>Overall Credibility</h6>
+                <h3>
+                  {result?.overall_credibility
+                    ? (result?.overall_credibility * 100).toFixed(1) + "%"
+                    : 0}
+                </h3>
+              </div>
+              {result?.overall_credibility >= 0.9 ? (
+                <ThumbUpIcon />
+              ) : (
+                <ThumbDownIcon />
+              )}
+            </div>
+          </div>
+
+          {result?.detailed_claims?.length > 0 && (
+            <>
+              <h3>Detected Claims</h3>
+              <ol>
+                {result?.detailed_claims?.map((data, index) => (
+                  <li key={index}>{data.claim}</li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          <div className="factCheckerDetails">
+            {result?.detailed_claims?.length > 0 && <h3>Fact Details</h3>}
+            {result?.detailed_claims.map((detail, index) => (
+              <div
+                key={index}
+                className={`factCheckerInfo ${index === 0 ? "first" : ""}`}
+              >
+                <div className={`factClaim ${detail.factuality_status}`}>
+                  <h4>
+                    {detail?.id}. {detail?.claim}
+                  </h4>
+                </div>
+
+                <div className="fcInner">
+                  <h5>Reasoning</h5>
+                  <p>{detail.reasoning}</p>
+                </div>
+
+                {detail.factuality_status === "false" && (
+                  <>
+                    <div className="fcInner">
+                      <h5>Error</h5>
+                      <p>{detail.error}</p>
+                    </div>
+
+                    <div className="fcInner">
+                      <h5>Correction</h5>
+                      <p>{detail.correction}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
