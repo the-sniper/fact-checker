@@ -1,8 +1,9 @@
 import os
 import sys
+import traceback
 import argparse
 import uvicorn
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -13,17 +14,18 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from openfactcheck import OpenFactCheck
 from lib.config import OpenFactCheckConfig
+from .evaluate_response import evaluate_response_async
 
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Define request and response models
+# Request and response models
 class ResponseEvaluationRequest(BaseModel):
     text: str
-    claimprocessor: Optional[str] = None
-    retriever: Optional[str] = None
-    verifier: Optional[str] = None
+    claimprocessor: Optional[str] = "factool_claimprocessor"
+    retriever: Optional[str] = "factool_retriever"
+    verifier: Optional[str] = "factool_verifier"
 
 class EvidenceSource(BaseModel):
     question: str
@@ -50,109 +52,88 @@ class ResponseEvaluationResult(BaseModel):
     overall_credibility: float
     detailed_claims: List[ClaimDetail]
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Initialize OpenFactCheck with custom configuration.')
+def create_app() -> FastAPI:
+    """
+    Factory function to create the FastAPI app.
+    It uses on_startup event to initialize OpenFactCheck.
+    """
     
-    # Add arguments here, example:
-    parser.add_argument("--config-path", 
-                        type=str, 
-                        help="Config File Path",
-                        default="config.json")
-    parser.add_argument("--port",
-                        type=int,
-                        help="Port to run the server on",
-                        default=8000)
-    parser.add_argument("--env-file",
-                        type=str,
-                        help="Path to .env file",
-                        default=".env")
-    
-    # Parse arguments from command line
-    args = parser.parse_args()
-    return args
+    app = FastAPI(
+        title="FactCheck API",
+        description="An API for factuality evaluation.",
+        version="1.0.0"
+    )
 
-def get_ofc(config_path: str = "config.json"):
-    # Check if the API keys are set in the environment variables
-    required_keys = ["OPENAI_API_KEY", "SERPER_API_KEY", "SCRAPER_API_KEY"]
-    missing_keys = [key for key in required_keys if not os.getenv(key)]
-    
-    if missing_keys:
-        raise EnvironmentError(f"Required API keys ({', '.join(missing_keys)}) not found in environment or .env file")
-    
-    # Initialize OpenFactCheck
-    config = OpenFactCheckConfig(config_path)
-    return OpenFactCheck(config)
+    # Enable CORS for frontend clients
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
 
-class App:
-    def __init__(self, config_path: str = "config.json", env_file: str = ".env"):
-        # Try to load environment variables from the specified .env file
-        if os.path.exists(env_file):
-            load_dotenv(env_file)
-            print(f"Loaded environment variables from {env_file}")
-        else:
-            print(f"Warning: Environment file {env_file} not found. Using system environment variables.")
-            
-        # Initialize FastAPI app
-        self.app = FastAPI(
-            title="OpenFactCheck API",
-            description="An API for factuality evaluation of LLM responses",
-            version="1.0.0"
-        )
-        self.config_path = config_path
-
-        # Enable CORS for frontend app
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["*"],
-            allow_headers=["*"]
-        )
+    @app.on_event("startup")
+    async def startup_event():
+        config_path = os.environ.get("CONFIG_PATH", "config.json")
         
-        # Register routes
-        self.register_routes()
-    
-    def register_routes(self):
-        @self.app.post("/evaluate-response", response_model=ResponseEvaluationResult)
-        async def evaluate_response(request: ResponseEvaluationRequest, ofc: OpenFactCheck = Depends(lambda: get_ofc(self.config_path))):
-            try:
-                # Prepare the input text format expected by the evaluator
-                input_text = {"text": request.text}
-                
-                # Call the async evaluate_response function
-                from evaluate_response import evaluate_response_async
-                result = await evaluate_response_async(
-                    ofc, 
-                    input_text, 
-                    claimprocessor=request.claimprocessor,
-                    retriever=request.retriever,
-                    verifier=request.verifier
-                )
-                
-                return result
-            except Exception as e:
-                import traceback
-                error_details = traceback.format_exc()
-                print(f"Error details: {error_details}")
-                raise HTTPException(status_code=500, detail=f"Error evaluating response: {str(e)}")
+        required_keys = ["OPENAI_API_KEY", "SERPER_API_KEY", "SCRAPER_API_KEY"]
+        missing_keys = [key for key in required_keys if not os.getenv(key)]
+        if missing_keys:
+            raise EnvironmentError(f"Required API keys ({', '.join(missing_keys)}) not found.")
         
-        @self.app.get("/available-components")
-        async def get_components(ofc: OpenFactCheck = Depends(lambda: get_ofc(self.config_path))):
-            """Get available claimprocessors, retrievers and verifiers"""
-            try:
-                return {
-                    "claimprocessors": ofc.list_claimprocessors(),
-                    "retrievers": ofc.list_retrievers(),
-                    "verifiers": ofc.list_verifiers()
-                }
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Error getting components: {str(e)}")
+        config = OpenFactCheckConfig(config_path)
+        app.state.ofc = OpenFactCheck(config)
+
+    @app.post("/evaluate-response", response_model=ResponseEvaluationResult)
+    async def evaluate_response(request: ResponseEvaluationRequest, req: Request):
+        try:
+            input_text = {"text": request.text}
+            ofc = req.app.state.ofc
+            result = await evaluate_response_async(
+                ofc,
+                input_text,
+                claimprocessor=request.claimprocessor,
+                retriever=request.retriever,
+                verifier=request.verifier,
+            )
+            return result
+        except Exception as e:
+            error_details = traceback.format_exc()
+            print(f"Error details: {error_details}")
+            raise HTTPException(status_code=500, detail=f"Error evaluating response: {str(e)}")
+
+    @app.get("/available-components")
+    async def get_components(req: Request):
+        try:
+            ofc = req.app.state.ofc
+            components = {
+                "claimprocessors": ofc.list_claimprocessors(),
+                "retrievers": ofc.list_retrievers(),
+                "verifiers": ofc.list_verifiers(),
+            }
+            return components
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error getting components: {str(e)}")
+
+    return app
 
 if __name__ == "__main__":
+    def parse_args():
+        parser = argparse.ArgumentParser(description="FastAPI application for OpenFactCheck.")
+        parser.add_argument("--config-path", type=str, default="config.json", help="Config file path")
+        parser.add_argument("--port", type=int, default=8000, help="Port to run the server on")
+        parser.add_argument("--env-file", type=str, default=".env", help="Path to .env file")
+        parser.add_argument("--debug", action="store_true", help="Run in debug mode with hot reload")
+        return parser.parse_args()
+
     args = parse_args()
     
-    try:
-        app = App(args.config_path, args.env_file)
-        # For running with uvicorn directly from this file
-        uvicorn.run(app.app, host="0.0.0.0", port=args.port)
-    except EnvironmentError as e:
-        print(f"Error: {e}")
+    os.environ["CONFIG_PATH"] = args.config_path
+    os.environ["ENV_FILE"] = args.env_file
+
+    uvicorn.run(
+        "app.app:create_app",
+        host="0.0.0.0",
+        port=args.port,
+        reload=args.debug
+    )
