@@ -3,6 +3,7 @@ import sys
 import argparse
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from dotenv import load_dotenv
@@ -98,6 +99,14 @@ class App:
             version="1.0.0"
         )
         self.config_path = config_path
+
+        # Enable CORS for frontend app
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"]
+        )
         
         # Register routes
         self.register_routes()
