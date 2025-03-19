@@ -4,7 +4,7 @@ import CustomButton from "@/components/atoms/buttons/CustomButton";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import { capitalize } from "@mui/material";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [meaningLessInput, setMeaningLessInput] = useState(false);
+  const formikRef = useRef(null); // Add useRef to store Formik instance
 
   const evaluateText = async (values) => {
     setLoading(true);
@@ -76,6 +77,7 @@ export default function Home() {
         <div className="factCheckerForm">
           <h1 className="text-lg">Fact Checker</h1>
           <Formik
+            innerRef={formikRef} // Attach Formik instance to the ref
             initialValues={{ text: "" }}
             validationSchema={EvaluationSchema}
             onSubmit={evaluateText}
@@ -111,7 +113,6 @@ export default function Home() {
           </Formik>
           {error && <div className="text-red-500 mt-4">{error}</div>}
         </div>
-
         {loading ? (
           <div className="claimsInfoCnt">
             {[...Array(6)].map((_, index) => (
@@ -153,14 +154,13 @@ export default function Home() {
               <p>Unverified Claims</p>
             </div>
           </div>
-        ) : (
+        ) : (formikRef.current?.values?.text != undefined && error == "") && (
           <div className="meaningLessInput">
             <h4>Oops! We couldn't understand that sentence or determine if it was a fact.</h4>
             <h4>Please try with another query.</h4>
           </div>
         )}
       </div>
-
       {loading ? (
         <div className="factCheckerDescription skeleton-section">
           {/* Overall Scores Skeleton */}
