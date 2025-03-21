@@ -1,7 +1,8 @@
 from .rarr_utils.question_generation import run_rarr_question_generation
 from .prompts import rarr_prompts
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 
 @Solver.register("rarr_question_generator", "claims_with_context", "claims_with_questions")

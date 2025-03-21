@@ -9,4 +9,3 @@ sentence-transformers
 spacy
 torch
 transformers
-openfactcheck

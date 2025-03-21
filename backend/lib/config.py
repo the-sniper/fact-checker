@@ -10,19 +10,19 @@ from importlib import resources as pkg_resources
 
 from utils.logging import get_logger, set_verbosity
 from errors import ConfigValidationError
-from openfactcheck import templates as solver_config_templates_dir
-from openfactcheck import solvers as solver_templates_dir
+import templates
+import solvers
 
 # Import solver configuration templates
-solver_config_templates_path = str(pkg_resources.files(solver_config_templates_dir) / "solver_configs")
+solver_config_templates_path = str(pkg_resources.files(templates) / "solver_configs")
 solver_config_template_files = [str(f) for f in Path(solver_config_templates_path).iterdir()]
 
 
 # Import default solvers
 # TODO: Currently, only webservice solvers are supported as default solvers
 solver_templates_paths = [
-    str(pkg_resources.files(solver_templates_dir) / "webservice"),
-    str(pkg_resources.files(solver_templates_dir) / "factool"),
+    str(pkg_resources.files(solvers) / "webservice"),
+    str(pkg_resources.files(solvers) / "factool"),
 ]
 
 # Load environment variables from .env file

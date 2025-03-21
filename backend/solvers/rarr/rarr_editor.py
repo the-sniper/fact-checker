@@ -3,7 +3,8 @@ import Levenshtein
 from .rarr_utils import agreement_gate, editor, evidence_selection
 from .prompts import rarr_prompts
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 
 @Solver.register("rarr_editor", "claims_with_evidences", "revised_claims")

@@ -1,7 +1,8 @@
 import nltk
 import spacy
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 from .factcheckgpt_utils.openai_api import gpt
 from .factcheckgpt_utils.data_util import save_to_file

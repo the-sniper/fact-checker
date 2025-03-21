@@ -1,7 +1,8 @@
 from .rarr_utils.hallucination import run_evidence_hallucination
 from .prompts.hallucination_prompts import EVIDENCE_HALLUCINATION
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 
 @Solver.register("llm_retriever", "claims_with_questions", "claims_with_evidences")

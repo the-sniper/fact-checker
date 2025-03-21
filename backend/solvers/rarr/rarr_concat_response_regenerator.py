@@ -1,4 +1,5 @@
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 @Solver.register("rarr_concat_response_generator", "revised_claims", "output")
 class RARRConcatResponseRegenerator(StandardTaskSolver):

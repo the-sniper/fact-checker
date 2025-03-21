@@ -1,4 +1,5 @@
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 @Solver.register("factool_post_editor", "claim_info", "claim_info")
 class FactoolPostEditor(StandardTaskSolver):

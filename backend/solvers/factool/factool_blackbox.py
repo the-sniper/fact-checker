@@ -1,6 +1,7 @@
 from factool import Factool
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 @Solver.register("factool_blackbox", "response", "claim_info")
 class FactoolBlackboxSolver(StandardTaskSolver):

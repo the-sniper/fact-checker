@@ -1,7 +1,8 @@
 from .rarr_utils import agreement_gate
 from .prompts import rarr_prompts
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 
 @Solver.register("rarr_agreement_gate", "claims_with_evidences", "claims_with_gates")

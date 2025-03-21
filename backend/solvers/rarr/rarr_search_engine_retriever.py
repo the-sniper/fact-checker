@@ -1,6 +1,7 @@
 from .rarr_utils import search
 
-from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
+from solver import StandardTaskSolver, Solver
+from state import FactCheckerState
 
 @Solver.register("search_engine_retriever", "claims_with_questions", "claims_with_evidences")
 class RARRSearchEngineRetriever(StandardTaskSolver):

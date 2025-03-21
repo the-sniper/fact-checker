@@ -3,6 +3,7 @@ import importlib
 
 from utils.logging import get_logger
 from state import FactCheckerState
+from pathlib import Path
 
 # Get the logger
 logger = get_logger(__name__)
@@ -115,27 +116,43 @@ class Solver:
         """
         Load a solver from a file
         """
-
         # Check if the file is a Python file
         if file_path.endswith(".py"):
             # Get the solver name
             solver_name = os.path.basename(file_path)[:-3]
 
             # Get the module name
-            module_name = namespace + "." + solver_name
+            if namespace.startswith("backend."):
+                module_name = namespace.replace("backend.", "", 1) + "." + solver_name
+            else:
+                module_name = namespace + "." + solver_name
 
             # Log the full module name to debug
             logger.debug(f"Attempting to import {module_name} from {file_path}")
 
             # Import the module
             try:
+                # Get the directory containing the file
+                dir_path = os.path.dirname(file_path)
+                
+                # Add the directory to sys.path temporarily
+                import sys
+                
+                # Add project root directory (containing backend folder)
+                project_root = Path(file_path).parents[file_path.count(os.sep) - file_path.replace('\\', '/').count('/backend/') - 1]
+                if str(project_root) not in sys.path:
+                    sys.path.insert(0, str(project_root))
+                    
+                if dir_path not in sys.path:
+                    sys.path.insert(0, dir_path)
+                    
                 importlib.import_module(module_name)
                 logger.debug(f"Successfully imported {module_name}")
             except Exception as e:
                 logger.error(f"Failed to import {module_name}: {e}")
                 raise Exception(f"Failed to import {module_name}: {e}")
 
-            return module_name
+            return solver_name
 
     @staticmethod
     def load(path, namespace):
