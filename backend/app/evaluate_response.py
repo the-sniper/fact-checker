@@ -148,10 +148,42 @@ def evaluate_response_api(
                     if detail.get("evidences", None) != "":
                         questions_evidences = {}
                         for evidence in detail.get("evidences", []):
-                            if evidence[0] not in questions_evidences:
-                                questions_evidences[evidence[0]] = []
-                            questions_evidences[evidence[0]].append(evidence[1])
+                            question = evidence[0]
+                            evidence_data = evidence[1]
+                            
+                            # Initialize if this question isn't in the dict yet
+                            if question not in questions_evidences:
+                                questions_evidences[question] = []
+                            
+                            # Check if evidence_data is a dict with content/source or just a string
+                            if isinstance(evidence_data, dict) and "content" in evidence_data and "source" in evidence_data:
+                                # Add structured evidence with text and URL
+                                questions_evidences[question].append({
+                                    "text": evidence_data["content"],
+                                    "url": evidence_data["source"]
+                                })
+                            elif isinstance(evidence_data, str):
+                                # If it's just a string (content only), add it without URL
+                                questions_evidences[question].append({
+                                    "text": evidence_data,
+                                    "url": "None"
+                                })
+                            else:
+                                # For any other format, try to add whatever data we have
+                                try:
+                                    text = str(evidence_data) if evidence_data else "No content"
+                                    questions_evidences[question].append({
+                                        "text": text,
+                                        "url": "None"
+                                    })
+                                except:
+                                    # Fallback for any problematic evidence
+                                    questions_evidences[question].append({
+                                        "text": "Error processing evidence",
+                                        "url": "None"
+                                    })
                         
+                        # Add processed evidences to claim data
                         for question, question_evidences in questions_evidences.items():
                             claim_data["evidences"].append({
                                 "question": question,

@@ -27,9 +27,13 @@ class ResponseEvaluationRequest(BaseModel):
     retriever: Optional[str] = "factool_retriever"
     verifier: Optional[str] = "factool_verifier"
 
+class SourceItem(BaseModel):
+    text: str
+    url: str
+
 class EvidenceSource(BaseModel):
     question: str
-    sources: List[str]
+    sources: List[SourceItem]
 
 class ClaimDetail(BaseModel):
     id: int

@@ -45,32 +45,39 @@ class GoogleSerperAPIWrapper():
 
         if results.get("answerBox"):
             answer_box = results.get("answerBox", {})
+            # Get the link from answerBox if available
+            source_url = answer_box.get("link", "None")
+            
             if answer_box.get("answer"):
-                element = {"content": answer_box.get("answer"), "source": "None"}
-                return [element]
+                element = {"content": answer_box.get("answer"), "source": source_url}
+                snippets.append(element)
             elif answer_box.get("snippet"):
-                element = {"content": answer_box.get("snippet").replace("\n", " "), "source": "None"}
-                return [element]
+                element = {"content": answer_box.get("snippet").replace("\n", " "), "source": source_url}
+                snippets.append(element)
             elif answer_box.get("snippetHighlighted"):
-                element = {"content": answer_box.get("snippetHighlighted"), "source": "None"}
-                return [element]
+                element = {"content": answer_box.get("snippetHighlighted"), "source": source_url}
+                snippets.append(element)
 
         if results.get("knowledgeGraph"):
             kg = results.get("knowledgeGraph", {})
+            # Use knowledge graph link if available
+            source_url = kg.get("link", "None")
+            
             title = kg.get("title")
             entity_type = kg.get("type")
             if entity_type:
-                element = {"content": f"{title}: {entity_type}", "source": "None"}
+                element = {"content": f"{title}: {entity_type}", "source": source_url}
                 snippets.append(element)
             description = kg.get("description")
             if description:
-                element = {"content": description, "source": "None"}
+                element = {"content": description, "source": source_url}
                 snippets.append(element)
             for attribute, value in kg.get("attributes", {}).items():
-                element = {"content": f"{attribute}: {value}", "source": "None"}
+                element = {"content": f"{attribute}: {value}", "source": source_url}
                 snippets.append(element)
 
-        for result in results["organic"][: self.k]:
+        # Process organic results
+        for result in results.get("organic", [])[: self.k]:
             if "snippet" in result:
                 element = {"content": result["snippet"], "source": result["link"]}
                 snippets.append(element)
@@ -82,8 +89,8 @@ class GoogleSerperAPIWrapper():
             element = {"content": "No good Google Search Result was found", "source": "None"}
             return [element]
 
-        # keep only the first k snippets
-        snippets = snippets[:int(self.k / 2)]
+        # Keep only the first k snippets
+        snippets = snippets[:self.k]
 
         return snippets
 

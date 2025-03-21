@@ -24,7 +24,7 @@ class FactoolRetriever(StandardTaskSolver):
         results = {}
         for query, claim, evidence in zip(queries, claims, evidences):
             merged_query = " ".join(query) if query and len(query) > 1 else str(query) if query else ""
-            results[claim] = [(merged_query, x["content"]) for x in evidence]
+            results[claim] = [(merged_query, x) for x in evidence]
         state.set(self.output_name, results)
         return True, state
 
