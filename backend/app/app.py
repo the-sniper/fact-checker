@@ -131,9 +131,21 @@ if __name__ == "__main__":
     os.environ["CONFIG_PATH"] = args.config_path
     os.environ["ENV_FILE"] = args.env_file
 
+    current_file = os.path.abspath(__file__)
+    app_dir = os.path.dirname(current_file)
+    backend_dir = os.path.dirname(app_dir)
+    
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+    
+    module_path = current_file.replace(backend_dir + os.path.sep, "")
+    module_name = module_path.replace(os.path.sep, ".").replace(".py", "")
+    
+    # Run uvicorn with absolute module path
     uvicorn.run(
-        "app.app:create_app",
+        f"{module_name}:create_app",
         host="0.0.0.0",
         port=args.port,
-        reload=args.debug
+        reload=args.debug,
+        factory=True
     )
