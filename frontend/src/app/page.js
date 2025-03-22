@@ -3,10 +3,13 @@ import CustomInput from "@/components/atoms/inputs/CustomInput";
 import CustomButton from "@/components/atoms/buttons/CustomButton";
 import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-import { capitalize } from "@mui/material";
+import { capitalize, Modal, Box, Button } from "@mui/material";
 import { useState, useRef } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
+import CloseIcon from "@mui/icons-material/Close";
+import PendingIcon from "@mui/icons-material/Pending";
+import ErrorIcon from "@mui/icons-material/Error";
 
 const EvaluationSchema = Yup.object().shape({
   text: Yup.string()
@@ -21,6 +24,8 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [meaningLessInput, setMeaningLessInput] = useState(false);
   const formikRef = useRef(null); // Add useRef to store Formik instance
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState(null);
 
   const evaluateText = async (values) => {
     setLoading(true);
@@ -71,11 +76,88 @@ export default function Home() {
     }
   };
 
+  const handleOpenCitationsModal = (detail) => {
+    setSelectedClaim(detail);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const modalStyle = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "80%",
+    maxWidth: 800,
+    bgcolor: "background.paper",
+    borderRadius: "8px",
+    boxShadow: 24,
+    p: 4,
+    maxHeight: "80vh",
+    overflow: "auto",
+  };
+
+  const isValidUrl = (url) => {
+    return url && url !== "None" && url.trim() !== "";
+  };
+
+  const countTotalSources = (detail) => {
+    if (!detail?.evidences?.length) return 0;
+
+    return detail.evidences.reduce((total, evidence) => {
+      if (!evidence.sources?.length) return total;
+
+      const validSourcesCount = evidence.sources.filter(
+        (source) => source && isValidUrl(source.url)
+      ).length;
+
+      return total + validSourcesCount;
+    }, 0);
+  };
+
+  // Helper function to process and limit citations to 5
+  const getVisibleCitations = (detail) => {
+    if (!detail?.evidences?.length) return [];
+
+    const result = [];
+    let sourcesShown = 0;
+
+    for (
+      let evidenceIndex = 0;
+      evidenceIndex < detail.evidences.length;
+      evidenceIndex++
+    ) {
+      const evidence = detail.evidences[evidenceIndex];
+
+      if (sourcesShown >= 5) break;
+
+      const remainingSlots = 5 - sourcesShown;
+      const sourcesToShow = evidence.sources?.slice(0, remainingSlots) || [];
+
+      if (sourcesToShow.length > 0) {
+        result.push({
+          evidenceIndex,
+          sources: sourcesToShow,
+        });
+        sourcesShown += sourcesToShow.length;
+      }
+    }
+
+    return result;
+  };
+
   return (
-    <div className="home customContainer">
+    <div
+      className={`home customContainer ${
+        result && !meaningLessInput ? "" : "newSection"
+      }`}
+    >
       <div className="factCheckerMain">
         <div className="factCheckerForm">
-          <h1 className="text-lg">Fact Checker</h1>
+          <h1 className="text-lg">Factchecker.ai</h1>
           <Formik
             innerRef={formikRef} // Attach Formik instance to the ref
             initialValues={{ text: "" }}
@@ -154,11 +236,17 @@ export default function Home() {
               <p>Unverified Claims</p>
             </div>
           </div>
-        ) : (formikRef.current?.values?.text != undefined && error == "") && (
-          <div className="meaningLessInput">
-            <h4>Oops! We couldn't understand that sentence or determine if it was a fact.</h4>
-            <h4>Please try with another query.</h4>
-          </div>
+        ) : (
+          formikRef.current?.values?.text != undefined &&
+          !error && (
+            <div className="meaningLessInput">
+              <h4>
+                Oops! We couldn't understand that sentence or determine if it
+                was a fact.
+              </h4>
+              <h4>Please try with another query.</h4>
+            </div>
+          )
         )}
       </div>
       {loading ? (
@@ -217,10 +305,14 @@ export default function Home() {
               <div className={`overallFactCheck ${result?.overall_factuality}`}>
                 <div>
                   <h6>Overall Fact-check</h6>
-                  <h3>{capitalize(result?.overall_factuality)}</h3>
+                  <h3>{capitalize(result?.overall_factuality || "")}</h3>
                 </div>
                 {result?.overall_factuality === "true" ? (
                   <ThumbUpIcon />
+                ) : result?.overall_factuality === "unverified" ? (
+                  <ErrorIcon />
+                ) : result?.overall_factuality === "controversial" ? (
+                  <PendingIcon />
                 ) : (
                   <ThumbDownIcon />
                 )}
@@ -259,7 +351,7 @@ export default function Home() {
 
             <div className="factCheckerDetails">
               {result?.detailed_claims?.length > 0 && <h3>Fact Details</h3>}
-              {result?.detailed_claims.map((detail, index) => (
+              {result?.detailed_claims?.map((detail, index) => (
                 <div
                   key={index}
                   className={`factCheckerInfo ${index === 0 ? "first" : ""}`}
@@ -288,12 +380,103 @@ export default function Home() {
                       </div>
                     </>
                   )}
+                  <div className="fcInner">
+                    <h5>Citations</h5>
+                    <div>
+                      <ul>
+                        {getVisibleCitations(detail).map(
+                          ({ evidenceIndex, sources }) => (
+                            <li key={`evidence-${evidenceIndex}`}>
+                              <ol className="sourcesList">
+                                {sources
+                                  .filter((d) => d.url != "None")
+                                  ?.map((source, sourceIndex) => (
+                                    <li
+                                      key={`source-${evidenceIndex}-${sourceIndex}`}
+                                    >
+                                      <p>{source.text}</p>
+                                      <small>
+                                        <a
+                                          href={source.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          {source.url}
+                                        </a>
+                                      </small>
+                                    </li>
+                                  ))}
+                              </ol>
+                            </li>
+                          )
+                        )}
+                      </ul>
+
+                      {countTotalSources(detail) > 5 && (
+                        <Button
+                          className="showMoreCitationsBtn"
+                          onClick={() => handleOpenCitationsModal(detail)}
+                        >
+                          {`Show all ${countTotalSources(detail)} citations`}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )
       )}
+
+      <Modal
+        open={modalOpen}
+        onClose={handleCloseModal}
+        className="citationsModal"
+        aria-labelledby="citations-modal"
+      >
+        <Box sx={modalStyle}>
+          <div className="citationsModalHead">
+            <h3 className="citationsModalTitle">All Citations</h3>
+            <Button onClick={handleCloseModal}>
+              <CloseIcon />
+            </Button>
+          </div>
+          {selectedClaim && (
+            <div>
+              <ol>
+                {selectedClaim.evidences?.map((evidence, evidenceIndex) => (
+                  <li key={`modal-evidence-${evidenceIndex}`} className="mb-3">
+                    <h4 className="mb-2 font-bold">{selectedClaim.claim}</h4>
+
+                    <ol className="sourcesList">
+                      {evidence.sources
+                        .filter((d) => d.url != "None")
+                        ?.map((source, sourceIndex) => (
+                          <li
+                            key={`modal-source-${evidenceIndex}-${sourceIndex}`}
+                            className="mb-2"
+                          >
+                            <p>{source.text}</p>
+                            <small>
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {source.url}
+                              </a>
+                            </small>
+                          </li>
+                        ))}
+                    </ol>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </Box>
+      </Modal>
     </div>
   );
 }

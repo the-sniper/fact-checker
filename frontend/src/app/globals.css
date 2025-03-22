@@ -135,7 +135,8 @@ html {
 .home h1 {
   margin-bottom: 30px;
   color: #000;
-  font-family: "Kaisei Opti";
+  /* font-family: "Kaisei Opti"; */
+  font-family: "Kodchasan";
   font-size: 28px;
   font-style: normal;
   font-weight: 700;
@@ -254,9 +255,31 @@ html {
   color: #d30b0b;
 }
 
+.overallScores .overallFactCheck.controversial {
+  border-color: #fd8a39;
+  color: #fd8a39;
+}
+
+.overallScores .overallFactCheck.unverified {
+  border-color: #6d3fc0;
+  color: #6d3fc0;
+}
+
+.overallScores .overallFactCheck.controversial svg {
+  fill: #f99b58;
+}
+
+.overallScores .overallFactCheck.unverified svg {
+  fill: #9469e1;
+}
+
 .overallScores .overallFactCheck svg {
   width: 50px;
   height: 50px;
+}
+
+.overallScores .overallFactCheck svg {
+  fill: #919191;
 }
 
 .overallScores .overallFactCheck.true svg {
@@ -380,6 +403,11 @@ html {
   height: 50px;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
+}
+
+.factCheckerDetails .fcInner .sourcesList li,
+.factCheckerDetails .fcInner .sourcesList li p {
+  font-size: 14px;
 }
 
 @keyframes spin {
@@ -566,6 +594,78 @@ html {
   font-size: 16px;
   font-weight: 500;
   color: #fb2c36;
+}
+
+.sourcesList li a {
+  color: #0b61f6;
+}
+
+.citationsModal .citationsModalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 0px;
+}
+
+.citationsModal ol {
+  padding-left: 20px;
+  list-style: decimal;
+}
+
+.citationsModal ol ol {
+  padding-left: 20px;
+  list-style: lower-roman;
+}
+
+.citationsModal .citationsModalHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.citationsModal .citationsModalHead button {
+  background: #fcfcfc;
+  min-width: 35px;
+  width: 35px;
+  height: 35px;
+  border-radius: 100%;
+  color: #7f7f7f;
+}
+
+.showMoreCitationsBtn.MuiButton-root {
+  color: var(--primColor);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Kodchasan";
+  text-decoration: underline;
+  text-transform: initial;
+}
+
+.newSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.newSection .factCheckerMain {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  margin-top: auto;
+  margin-bottom: auto;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.newSection .factCheckerForm,
+.newSection .meaningLessInput {
+  width: 100%;
+}
+
+.newSection .factCheckerDescription{
+  width: 100%;
 }
 
 @media (max-width: 1600px) {
